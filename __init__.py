@@ -11,9 +11,7 @@ class ApplyCosmosReferenceModelPatch:
     def INPUT_TYPES(s):
         return {"required": {"model": ("MODEL",)}}
 
-    RETURN_TYPES = ("MODEL",)
-    FUNCTION = "patch"
-    CATEGORY = "Cosmos/Reference"
+from .cosmos_temporal_reference import ApplyCosmosReferenceLatent
 
     def patch(self, model):
         m = model.clone()
