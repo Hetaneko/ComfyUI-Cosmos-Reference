@@ -42,6 +42,8 @@ class ApplyCosmosReferenceLatent(io.ComfyNode):
     def execute(cls, **kwargs) -> io.NodeOutput:
         model: ModelPatcher = kwargs["model"]
         ref_latents: dict[str, dict[str, Any]] = kwargs["ref_latents"]
+        if 'latent' in kwargs:
+            ref_latents['latent_for_compatibility'] = kwargs["latent"]
         m = model.clone()
         model_type = type(m.model)
 
