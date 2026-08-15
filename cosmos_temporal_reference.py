@@ -8,7 +8,7 @@ from comfy.model_base import Anima
 from comfy.model_patcher import ModelPatcher
 from comfy_api.latest import io
 
-MAX_REF_LATENTS = 1
+MAX_REF_LATENTS = 2
 COND_REF_LATENTS_KEY = "ref_latents"
 TEMPORAL_REFERENCE_WRAPPER_KEY = "cosmos_temporal_reference"
 
@@ -82,18 +82,34 @@ def cosmos_extra_conds_reference(
 def cosmos_diffusion_reference_wrapper(executor, *args, **kwargs):
     x: torch.Tensor = args[0]
     x_temporal_dim = x.shape[2]
-    ref_latents: torch.Tensor | None = kwargs.get(COND_REF_LATENTS_KEY)
+    ref_latents = kwargs.get(COND_REF_LATENTS_KEY)
 
     newargs = list(args)
 
     if ref_latents is not None:
-        for ref in ref_latents:
-            if ref.ndim == 4:
-                ref = ref.unsqueeze(2)
-            x = torch.cat([x, ref.to(dtype=x.dtype, device=x.device)], dim=2)
+        refs = list(ref_latents)
+
+        # Reference 1
+        if len(refs) >= 1:
+            ref_latent_1 = refs[0]
+            if ref_latent_1.ndim == 4:
+                ref_latent_1 = ref_latent_1.unsqueeze(2)
+            ref1 = ref_latent_1.to(dtype=x.dtype, device=x.device)
+            x = torch.cat([x, ref1], dim=2)
+
+        # Reference 2
+        if len(refs) >= 2:
+            ref_latent_2 = refs[1]
+            if ref_latent_2.ndim == 4:
+                ref_latent_2 = ref_latent_2.unsqueeze(2)
+            ref2 = ref_latent_2.to(dtype=x.dtype, device=x.device)
+            x = torch.cat([x, ref2], dim=2)
 
     newargs[0] = x
 
-    result = executor(*newargs, **kwargs)[:, :, :x_temporal_dim]
+    result = executor(*newargs, **kwargs)
+
+    # Remove both reference temporal sections and return only the original x.
+    result = result[:, :, :x_temporal_dim]
 
     return result
